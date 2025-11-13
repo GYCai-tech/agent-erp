@@ -288,8 +288,8 @@ async def startup_db():
             logger.warning("⚠ Conexión a base de datos falló en startup")
 
     except Exception as e:
-        logger.error(f"✗ Error en startup de base de datos: {e}")
-        raise
+        logger.warning(f"⚠ No se pudo conectar a la base de datos: {e}")
+        logger.warning("⚠ La aplicación continuará sin base de datos")
 
 
 async def shutdown_db():

@@ -173,8 +173,9 @@ def validate_critical_config():
 
 
 # Ejecutar validación al importar (en desarrollo)
-if not settings.is_production:
-    try:
-        validate_critical_config()
-    except ValueError as e:
-        print(f"\n⚠️  {str(e)}\n")
+# Desactivado temporalmente para permitir arrancar sin BD
+# if not settings.is_production:
+#     try:
+#         validate_critical_config()
+#     except ValueError as e:
+#         print(f"\n⚠️  {str(e)}\n")
