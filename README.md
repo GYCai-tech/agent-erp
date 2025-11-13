@@ -67,6 +67,12 @@ agente-erp/
 │   └── schemas/                # Pydantic models
 │       ├── requests.py
 │       └── responses.py
+├── ui/                         # Interfaz Streamlit
+│   ├── Home.py                 # Dashboard principal
+│   ├── pages/
+│   │   └── 1_💬_Chat.py       # Chat con el ERP
+│   └── utils/
+│       └── api_client.py       # Cliente API
 ├── scripts/
 │   └── explore_database.py     # Script de exploración
 ├── docs/
@@ -159,7 +165,44 @@ Obteniendo información de todas las tablas...
 
 ---
 
-## 🔥 Iniciar FastAPI
+## 🎨 Iniciar la Interfaz de Usuario (Streamlit)
+
+### Opción 1: Ejecutar localmente
+
+```bash
+cd P:/agente-erp
+
+# 1. Iniciar FastAPI (en una terminal)
+python app/main.py
+
+# 2. Iniciar Streamlit (en otra terminal)
+streamlit run ui/Home.py
+```
+
+**La aplicación estará disponible en:**
+- 🎨 **UI Streamlit**: http://localhost:8501
+- 📖 API Docs: http://localhost:8000/docs
+
+### Opción 2: Docker (Recomendado)
+
+```bash
+cd P:/agente-erp
+docker-compose up -d
+```
+
+Esto iniciará:
+- **Streamlit UI**: http://localhost:8501
+- **FastAPI**: http://localhost:8000
+- **Qdrant**: http://localhost:6333
+
+Para detener:
+```bash
+docker-compose down
+```
+
+---
+
+## 🔥 Usar solo FastAPI (sin UI)
 
 ### Desarrollo (con auto-reload)
 
@@ -240,6 +283,24 @@ POST /api/v1/monitoring/reset
 ---
 
 ## 💡 Ejemplos de Uso
+
+### Usando la Interfaz Web (Streamlit)
+
+La forma más sencilla es usar la UI web:
+
+1. **Explorar tablas**:
+   - Abre http://localhost:8501
+   - Busca tablas por nombre
+   - Selecciona una tabla para ver detalles y datos
+
+2. **Chat con el ERP**:
+   - Ve a la página "💬 Chat"
+   - Haz preguntas como:
+     - "¿Cuántas tablas hay?"
+     - "Muéstrame información de facturas"
+     - "¿Cuántos registros tiene A_Facturas?"
+
+### Usando la API REST (curl)
 
 ### Ejemplo 1: Explorar tabla A_Facturas
 

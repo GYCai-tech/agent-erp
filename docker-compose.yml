@@ -22,6 +22,25 @@ services:
     networks:
       - agente-erp-network
 
+  # Streamlit UI
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agente-erp-ui
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+    volumes:
+      - ./ui:/app/ui
+    command: streamlit run ui/Home.py --server.port 8501 --server.address 0.0.0.0
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - agente-erp-network
+
   # Qdrant (para futuro - almacenamiento de embeddings)
   qdrant:
     image: qdrant/qdrant:latest

@@ -48,3 +48,6 @@ prometheus-client==0.19.0
 black==23.11.0  # Formateo de código
 flake8==6.1.0  # Linting
 mypy==1.7.1  # Type checking
+
+# UI - Streamlit
+streamlit==1.29.0
