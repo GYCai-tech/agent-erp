@@ -34,7 +34,7 @@ services:
       - API_URL=http://api:8000
     volumes:
       - ./ui:/app/ui
-    command: streamlit run ui/Home.py --server.port 8501 --server.address 0.0.0.0
+    command: streamlit run /app/ui/Home.py --server.port 8501 --server.address 0.0.0.0
     restart: unless-stopped
     depends_on:
       - api
