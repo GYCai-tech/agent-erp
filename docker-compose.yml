@@ -15,9 +15,8 @@ services:
       - LOG_LEVEL=${LOG_LEVEL}
       - ENVIRONMENT=development
     volumes:
-      - ./app:/app/app
       - ./logs:/app/logs
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     restart: unless-stopped
     networks:
       - agente-erp-network
@@ -32,8 +31,6 @@ services:
       - "8503:8501"
     environment:
       - API_URL=http://api:8000
-    volumes:
-      - ./ui:/app/ui
     command: streamlit run /app/ui/Home.py --server.port 8501 --server.address 0.0.0.0
     restart: unless-stopped
     depends_on:
