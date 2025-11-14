@@ -12,7 +12,7 @@ from app.core.logging import app_logger as logger
 from app.database.connection import startup_db, shutdown_db
 
 # Importar routers
-from app.api.routes import health, database, monitoring
+from app.api.routes import health, database, monitoring, chat
 
 
 @asynccontextmanager
@@ -69,6 +69,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api/v1")
 app.include_router(database.router, prefix="/api/v1")
 app.include_router(monitoring.router, prefix="/api/v1")
+app.include_router(chat.router, prefix="/api/v1")
 
 
 # Root endpoint

@@ -26,22 +26,13 @@ st.markdown("Sistema inteligente de consultas a la base de datos ERP")
 
 # Sidebar con info
 with st.sidebar:
-    st.header("ℹ️ Información")
-    st.markdown("""
-    **Desarrollado por:** Santiago Arce
-
-    **Empresa:** Gómez y Crespo, Ourense
-
-    **Versión:** 1.0.0 (Fase 1)
-    """)
-
-    st.divider()
+    st.header("ℹ️ Estado del Sistema")
 
     # Health check
     with st.spinner("Conectando con API..."):
         health = api_client.health_check()
 
-    if health.get("status") == "healthy":
+    if health.get("status") == "ok":
         st.success("✅ API conectada")
         st.caption(f"Base de datos: {health.get('database', 'N/A')}")
     else:
@@ -49,7 +40,7 @@ with st.sidebar:
         st.caption("Verifica que FastAPI esté ejecutándose")
 
 # Verificar conexión antes de continuar
-if health.get("status") != "healthy":
+if health.get("status") != "ok":
     st.warning("⚠️ La API no está disponible. Por favor, inicia el servidor FastAPI:")
     st.code("cd P:/agente-erp\npython app/main.py", language="bash")
     st.stop()

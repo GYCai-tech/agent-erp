@@ -46,6 +46,7 @@ class DatabaseManager:
                     pool_timeout=30,
                     pool_recycle=3600,
                     echo=settings.is_development,  # SQL logging en desarrollo
+                    pool_pre_ping=True,  # Verificar conexiones antes de usarlas
                 )
 
                 # Event listener para logging
@@ -53,11 +54,7 @@ class DatabaseManager:
                 def receive_connect(dbapi_conn, connection_record):
                     logger.debug("Nueva conexión a la base de datos establecida")
 
-                # Verificar conexión
-                with self._engine.connect() as conn:
-                    conn.execute(text("SELECT 1"))
-
-                logger.info("✓ Engine de base de datos creado exitosamente")
+                logger.info("✓ Engine de base de datos creado (conexión lazy)")
 
             except Exception as e:
                 logger.error(f"✗ Error al crear engine de base de datos: {e}")

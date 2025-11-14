@@ -1,6 +1,6 @@
 """
 💬 Chat con el ERP
-Conversa con la base de datos en lenguaje natural
+Conversa con la base de datos en lenguaje natural usando IA
 """
 import streamlit as st
 import sys
@@ -19,26 +19,31 @@ st.set_page_config(
 )
 
 st.title("💬 Chat con el ERP")
-st.markdown("Haz preguntas sobre tus datos en lenguaje natural")
+st.markdown("Haz preguntas sobre tus datos en lenguaje natural - **Powered by AI + MCP**")
 
 # Verificar conexión
 with st.spinner("Conectando con API..."):
     health = api_client.health_check()
 
-if health.get("status") != "healthy":
+if health.get("status") != "ok":
     st.error("❌ La API no está disponible. Por favor, inicia el servidor FastAPI.")
+    st.stop()
+
+# Verificar que MCP esté disponible
+chat_health = api_client.check_chat_health()
+if not chat_health.get("mcp_enabled"):
+    st.warning("⚠️ El chat MCP no está disponible. Verifica la configuración de OpenAI API Key.")
+    st.info(f"Estado: {chat_health.get('status', 'unknown')}")
     st.stop()
 
 # Inicializar historial de chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Mostrar mensajes previos
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+if "conversation_history" not in st.session_state:
+    st.session_state.conversation_history = []
 
-# Sidebar con ejemplos
+# Sidebar con información y ejemplos
 with st.sidebar:
     st.header("💡 Ejemplos de Preguntas")
 
@@ -48,6 +53,9 @@ with st.sidebar:
         "¿Cuáles son las tablas disponibles?",
         "¿Qué información hay en la tabla A_Facturas?",
         "¿Cuántos clientes tenemos registrados?",
+        "¿Qué tablas contienen información de pedidos?",
+        "Analiza la tabla de facturas",
+        "¿Cuáles son las tablas con más registros?",
     ]
 
     st.markdown("**Prueba preguntas como:**")
@@ -57,9 +65,29 @@ with st.sidebar:
 
     st.divider()
 
+    # Información del modelo
+    st.caption(f"🤖 Modelo: {chat_health.get('model', 'N/A')}")
+    st.caption("🔧 MCP Tools: Activos")
+
+    st.divider()
+
     if st.button("🗑️ Limpiar chat", use_container_width=True):
         st.session_state.messages = []
+        st.session_state.conversation_history = []
         st.rerun()
+
+# Mostrar mensajes previos
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+        # Mostrar herramientas usadas si las hay
+        if "tools_used" in message and message["tools_used"]:
+            with st.expander("🔧 Herramientas usadas"):
+                for tool in message["tools_used"]:
+                    st.code(f"📌 {tool['name']}", language="text")
+                    if tool.get("arguments"):
+                        st.json(tool["arguments"])
 
 # Input del usuario
 prompt = st.chat_input("Escribe tu pregunta aquí...")
@@ -76,96 +104,137 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Generar respuesta
+    # Generar respuesta usando MCP
     with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
-            # Por ahora, respuesta simple basada en la API actual
-            # En Fase 2 se integrará con MCP/OpenAI para respuestas inteligentes
+        with st.spinner("🤔 Analizando tu pregunta..."):
+            try:
+                # Llamar al endpoint de chat
+                result = api_client.chat_with_agent(
+                    message=prompt,
+                    conversation_history=st.session_state.conversation_history
+                )
 
-            response = process_query(prompt)
-            st.markdown(response)
+                if result.get("success"):
+                    response = result.get("message", "No se pudo generar una respuesta")
+                    tools_used = result.get("tools_used", [])
+                    iterations = result.get("iterations", 0)
 
-    # Agregar respuesta al historial
-    st.session_state.messages.append({"role": "assistant", "content": response})
+                    # Actualizar historial de conversación
+                    st.session_state.conversation_history = result.get("conversation_history", [])
 
+                    # Mostrar respuesta
+                    st.markdown(response)
 
-def process_query(query: str) -> str:
-    """
-    Procesa la query del usuario y genera una respuesta
-    Nota: Esta es una versión simplificada. En Fase 2 se integrará con LLM
-    """
-    query_lower = query.lower()
+                    # Mostrar herramientas usadas
+                    if tools_used:
+                        with st.expander(f"🔧 Herramientas usadas ({len(tools_used)})"):
+                            for i, tool in enumerate(tools_used, 1):
+                                st.markdown(f"**{i}. {tool['name']}**")
 
-    # Respuestas basadas en palabras clave (simple)
-    if "tabla" in query_lower and ("cuántas" in query_lower or "listar" in query_lower or "mostrar" in query_lower):
-        tables = api_client.get_tables()
-        if tables:
-            return f"📋 Hay **{len(tables)}** tablas en la base de datos:\n\n" + "\n".join([f"- {t}" for t in tables[:10]]) + \
-                   (f"\n\n...y {len(tables) - 10} más" if len(tables) > 10 else "")
-        return "No se pudieron cargar las tablas"
+                                if tool.get("arguments"):
+                                    st.markdown("**Argumentos:**")
+                                    st.json(tool["arguments"])
 
-    elif "resumen" in query_lower or "estadística" in query_lower:
-        summary = api_client.get_database_summary()
-        if "error" not in summary:
-            return f"""📊 **Resumen de la Base de Datos:**
+                                if tool.get("result"):
+                                    st.markdown("**Resultado:**")
+                                    result_data = tool["result"]
 
-- **Total de tablas:** {summary.get('total_tables', 0)}
-- **Tablas con datos:** {summary.get('tables_with_data', 0)}
-- **Total de registros:** {summary.get('total_rows', 0):,}
-"""
-        return "Error al obtener el resumen"
+                                    # Mostrar resumen del resultado
+                                    if isinstance(result_data, dict):
+                                        if "data" in result_data and isinstance(result_data["data"], list):
+                                            st.info(f"✓ {len(result_data['data'])} filas retornadas")
+                                        elif "tables" in result_data and isinstance(result_data["tables"], list):
+                                            st.info(f"✓ {len(result_data['tables'])} tablas encontradas")
+                                        elif "error" in result_data:
+                                            st.error(f"❌ Error: {result_data['error']}")
+                                        else:
+                                            st.json(result_data)
 
-    elif "factura" in query_lower:
-        # Buscar info de la tabla A_Facturas
-        table_info = api_client.get_table_info("A_Facturas")
-        if "error" not in table_info:
-            row_count = table_info.get('row_count', 0)
-            columns = table_info.get('columns', [])
+                                if i < len(tools_used):
+                                    st.divider()
 
-            return f"""📄 **Información de Facturas (A_Facturas):**
+                        st.caption(f"⚡ Completado en {iterations} iteración(es)")
 
-- **Total de facturas:** {row_count}
-- **Número de campos:** {len(columns)}
-- **Campos principales:** {', '.join([c['name'] for c in columns[:5]])}
+                    # Agregar al historial UI
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": response,
+                        "tools_used": tools_used
+                    })
 
-Para ver más detalles, visita la página de inicio y selecciona la tabla A_Facturas.
-"""
-        return "No se pudo encontrar información de facturas"
+                else:
+                    error_msg = result.get("error", "Error desconocido")
+                    st.error(f"❌ Error: {error_msg}")
 
-    else:
-        # Respuesta genérica
-        return f"""🤖 Entiendo tu pregunta: "{query}"
+                    # Agregar mensaje de error al historial
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": f"❌ Lo siento, ocurrió un error: {error_msg}"
+                    })
 
-**Nota:** Actualmente estoy en Fase 1 (exploración básica). Puedo ayudarte con:
-
-✅ Listar tablas disponibles
-✅ Mostrar resumen de la base de datos
-✅ Ver información de tablas específicas
-
-**En la Fase 2** (próximamente) podré:
-- Responder preguntas complejas en lenguaje natural
-- Ejecutar consultas SQL automáticamente
-- Generar análisis y gráficos
-
-💡 **Tip:** Usa la página de inicio para explorar las tablas visualmente.
-"""
-
+            except Exception as e:
+                st.error(f"❌ Error al procesar la pregunta: {str(e)}")
+                st.session_state.messages.append({
+                    "role": "assistant",
+                    "content": f"❌ Error: {str(e)}"
+                })
 
 # Nota informativa
 with st.expander("ℹ️ Sobre esta funcionalidad"):
     st.markdown("""
-    ### Estado Actual: Fase 1
+    ### ✨ Fase 2: Chat Inteligente con MCP
 
-    Esta es una versión simplificada del chat. Actualmente responde a:
-    - Preguntas sobre tablas disponibles
-    - Información sobre facturas
-    - Resumen de la base de datos
+    Este chat utiliza:
+    - 🤖 **OpenAI GPT-4** para comprensión de lenguaje natural
+    - 🔧 **MCP (Model Context Protocol)** para consultas complejas
+    - 📊 **Herramientas especializadas** para la base de datos
 
-    ### Próximamente: Fase 2 - MCP + LLM
+    #### Capacidades:
 
-    En la siguiente fase se integrará:
-    - 🤖 OpenAI GPT-4 para comprensión de lenguaje natural
-    - 🔧 MCP (Model Context Protocol) para consultas complejas
-    - 📊 Generación automática de SQL
-    - 📈 Visualizaciones dinámicas
+    ✅ **Exploración de Base de Datos**
+    - Buscar tablas por nombre
+    - Ver esquema de tablas
+    - Analizar relaciones entre tablas
+
+    ✅ **Consultas SQL**
+    - Genera y ejecuta consultas automáticamente
+    - Solo lectura (SELECT)
+    - Validación de seguridad
+
+    ✅ **Análisis de Datos**
+    - Estadísticas de tablas
+    - Conteo de registros
+    - Análisis de valores nulos
+
+    #### Ejemplos de uso:
+
+    ```
+    "¿Cuántas facturas hay en total?"
+    → Busca la tabla de facturas y cuenta los registros
+
+    "Muéstrame las columnas de la tabla Clientes"
+    → Busca la tabla y muestra su esquema
+
+    "¿Qué tablas están relacionadas con pedidos?"
+    → Busca y analiza las relaciones entre tablas
+    ```
+
+    #### Seguridad:
+
+    🔒 **Solo lectura**: Solo se permiten consultas SELECT
+    🛡️ **Validación**: Se bloquean operaciones peligrosas (DROP, DELETE, etc.)
+    📝 **Auditoría**: Todas las consultas se registran
     """)
+
+# Footer con estado
+st.divider()
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.caption(f"💬 Mensajes: {len(st.session_state.messages)}")
+
+with col2:
+    st.caption(f"🤖 Modelo: {chat_health.get('model', 'N/A')}")
+
+with col3:
+    st.caption("✅ MCP Activo")

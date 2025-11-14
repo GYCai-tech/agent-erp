@@ -1,7 +1,7 @@
 """
 Pydantic schemas para requests
 """
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 
 
@@ -60,4 +60,26 @@ class TableExploreRequest(BaseModel):
         description="Número de filas de muestra",
         ge=1,
         le=100
+    )
+
+
+class ChatRequest(BaseModel):
+    """Request para chat con el agente ERP"""
+
+    message: str = Field(
+        ...,
+        description="Mensaje del usuario",
+        min_length=1,
+        max_length=2000,
+        examples=["¿Cuántas facturas tenemos?", "Muéstrame las tablas de clientes"]
+    )
+
+    conversation_history: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Historial de conversación previo"
+    )
+
+    session_id: Optional[str] = Field(
+        default=None,
+        description="ID de sesión para mantener contexto"
     )

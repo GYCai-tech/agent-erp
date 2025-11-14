@@ -113,7 +113,7 @@ El archivo `.env` ya está configurado con las credenciales correctas para desar
 Verifica que contenga:
 - `DB_SERVER=SRVAHORA`
 - `DB_DATABASE=GOMEZYCRESPO_PRUEBAS`
-- `OPENAI_API_KEY=tu-api-key`
+- `GROQ_API_KEY=tu-api-key`
 
 #### 4. Probar conexión
 
@@ -397,7 +397,7 @@ pytest --cov=app tests/
 - [ ] Implementar MCP Server
 - [ ] Tools para consultas SQL
 - [ ] Tools para análisis de esquema
-- [ ] Integración con OpenAI/Claude
+- [ ] Integración con Groq/Claude
 
 ### 📋 Fase 3: Agente Router
 - [ ] Agente que decide API vs MCP

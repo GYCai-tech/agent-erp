@@ -45,10 +45,10 @@ class Settings(BaseSettings):
     db_trust_certificate: bool = Field(default=True, env="DB_TRUST_CERTIFICATE")
     db_read_only: bool = Field(default=True, env="DB_READ_ONLY")
 
-    # OpenAI
-    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
-    openai_model: str = Field(default="gpt-4-turbo-preview", env="OPENAI_MODEL")
-    openai_temperature: float = Field(default=0.1, env="OPENAI_TEMPERATURE")
+    # Groq
+    groq_api_key: Optional[str] = Field(default=None, env="GROQ_API_KEY")
+    groq_model: str = Field(default="llama-3.3-70b-versatile", env="GROQ_MODEL")
+    groq_temperature: float = Field(default=0.1, env="GROQ_TEMPERATURE")
 
     # Anthropic (opcional)
     anthropic_api_key: Optional[str] = Field(default=None, env="ANTHROPIC_API_KEY")
@@ -158,8 +158,8 @@ def validate_critical_config():
     if not settings.db_password:
         errors.append("DB_PASSWORD no está configurada")
 
-    if not settings.openai_api_key and not settings.anthropic_api_key:
-        errors.append("Debe configurar OPENAI_API_KEY o ANTHROPIC_API_KEY")
+    if not settings.groq_api_key and not settings.anthropic_api_key:
+        errors.append("Debe configurar GROQ_API_KEY o ANTHROPIC_API_KEY")
 
     if settings.db_read_only is False and settings.is_production:
         errors.append("ADVERTENCIA: DB_READ_ONLY está desactivado en producción")
